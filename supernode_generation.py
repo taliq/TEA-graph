@@ -68,6 +68,14 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
     if os.path.exists(save_dir) is False:
         os.mkdir(save_dir)
 
+    origin_dir = os.path.join(save_dir, 'original')
+    if os.path.exists(origin_dir) is False:
+        os.mkdir(origin_dir)
+
+    superpatch_dir = os.path.join(save_dir, 'superpatch')
+    if os.path.exists(superpatch_dir) is False:
+        os.mkdir(superpatch_dir)
+
     transform = transforms.Compose([
                 transforms.Resize(320),
                 transforms.CenterCrop(299),
@@ -143,7 +151,6 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
                         level = 0
                         patch_size = (imagesize, imagesize)
                         location = (filter_location[0], filter_location[1])
-                        x = str(i)
                         
                         CutImage = slideimage.read_region(location, level, patch_size)
                         
@@ -161,8 +168,6 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
                             dataloader = torch.utils.data.DataLoader(Dataset,batch_size=batchsize,num_workers=0,drop_last=False)
                             for sample_img in dataloader:
                                 images = sample_img['image']
-                                X = sample_img['X']
-                                Y = sample_img['Y']
                                 images = images.to(device)
                                 with torch.set_grad_enabled(False):
                                      classifier, features = model_ft(images)
@@ -196,8 +201,6 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
                 dataloader = torch.utils.data.DataLoader(Dataset,batch_size=batchsize,num_workers=0,drop_last=False)
                 for sample_img in dataloader:
                     images = sample_img['image']
-                    X = sample_img['X']
-                    Y = sample_img['Y']
                     images = images.to(device)
                     with torch.set_grad_enabled(False):
                          classifier, features = model_ft(images)
@@ -221,7 +224,8 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
         graph_dataframe = graph_dataframe.sort_values(by = ['Y', 'X'])
         graph_dataframe = graph_dataframe.reset_index(drop = True)
         coordinate_df = graph_dataframe.iloc[:,0:2]
-        coordinate_df.to_csv(os.path.join(save_dir, sample+'_node_location_list.csv'))
+        feature_df.to_csv(os.path.join(origin_dir, sample + '_feature_list.csv'))
+        coordinate_df.to_csv(os.path.join(origin_dir, sample+'_node_location_list.csv'))
         index = list(graph_dataframe.index)
         graph_dataframe.insert(0,'index_orig', index)
         
@@ -330,7 +334,7 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
         
                     pbar.update()
         
-        a_file = open(os.path.join(save_dir, sample + '_node_dict.pkl'), "wb")
+        a_file = open(os.path.join(origin_dir, sample + '_node_dict.pkl'), "wb")
         pickle.dump(node_dict, a_file)
         a_file.close()
         dict_len_list = []
@@ -360,7 +364,6 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
                                    supernode_feature_strict]
         
         whole_feature = graph_dataframe[graph_dataframe.columns.difference(['index_orig','X','Y'])]
-        
 
         with tqdm(total = len(node_dict.keys())) as pbar_node:
             for key_value in node_dict.keys():
@@ -387,22 +390,23 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
          
             fromlist = []
             tolist = []
-            feature_list = []
             
-            for i in range(len(coordinate_matrix1)):
-                temp = coordinate_matrix1[i,:]
-                selectindex = np.where(temp > 0)[0].tolist()
-                for index in selectindex:
-                    fromlist.append(int(i))
-                    tolist.append(int(index))
+            with tqdm(total = len(coordinate_matrix1)) as pbar_pytorch_geom:
+                for i in range(len(coordinate_matrix1)):
+                    temp = coordinate_matrix1[i,:]
+                    selectindex = np.where(temp > 0)[0].tolist()
+                    for index in selectindex:
+                        fromlist.append(int(i))
+                        tolist.append(int(index))
+                    pbar_pytorch_geom.update()
                             
             edge_index = torch.tensor([fromlist, tolist], dtype=torch.long)
             x = torch.tensor(value[2], dtype=torch.float)
             data = Data(x=x, edge_index=edge_index)
             
             node_dict = pd.DataFrame.from_dict(node_dict, orient='index')
-            node_dict.to_csv(os.path.join(save_dir, sample + '_' + str(threshold) + '.csv'))
-            torch.save(data, os.path.join(save_dir, sample+ '_' + str(threshold) + '_graph_torch.pt'))
+            node_dict.to_csv(os.path.join(superpatch_dir, sample + '_' + str(threshold) + '.csv'))
+            torch.save(data, os.path.join(superpatch_dir, sample+ '_' + str(threshold) + '_graph_torch.pt'))
 
 def Parser_main():
     
@@ -451,7 +455,7 @@ def main():
     
     with tqdm(total=len(final_files)) as pbar_tot:
         for image in final_files:
-            supernode_generation(image, model_ft, device,Argument, save_dir)
+            supernode_generation(image, model_ft, device, Argument, save_dir)
             pbar_tot.update()
     
 if __name__ == "__main__":
