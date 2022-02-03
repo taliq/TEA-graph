@@ -381,32 +381,31 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
                     temp_select = np.array(select_feature)
                     supernode_relate_value[2] = np.concatenate((supernode_relate_value[2], np.reshape(temp_select, (1,1794))), axis=0)
                 pbar_node.update()
-                
-        for c, value in enumerate(supernode_relate_value):
+
     
-            coordinate_integrate = pd.DataFrame({'X':value[0],'Y':value[1]})
-            coordinate_matrix1 = euclidean_distances(coordinate_integrate, coordinate_integrate)
-            coordinate_matrix1 = np.where(coordinate_matrix1 > spatial_threshold , 0 , 1)
-         
-            fromlist = []
-            tolist = []
-            
-            with tqdm(total = len(coordinate_matrix1)) as pbar_pytorch_geom:
-                for i in range(len(coordinate_matrix1)):
-                    temp = coordinate_matrix1[i,:]
-                    selectindex = np.where(temp > 0)[0].tolist()
-                    for index in selectindex:
-                        fromlist.append(int(i))
-                        tolist.append(int(index))
-                    pbar_pytorch_geom.update()
-                            
-            edge_index = torch.tensor([fromlist, tolist], dtype=torch.long)
-            x = torch.tensor(value[2], dtype=torch.float)
-            data = Data(x=x, edge_index=edge_index)
-            
-            node_dict = pd.DataFrame.from_dict(node_dict, orient='index')
-            node_dict.to_csv(os.path.join(superpatch_dir, sample + '_' + str(threshold) + '.csv'))
-            torch.save(data, os.path.join(superpatch_dir, sample+ '_' + str(threshold) + '_graph_torch.pt'))
+        coordinate_integrate = pd.DataFrame({'X':supernode_relate_value[0],'Y':supernode_relate_value[1]})
+        coordinate_matrix1 = euclidean_distances(coordinate_integrate, coordinate_integrate)
+        coordinate_matrix1 = np.where(coordinate_matrix1 > spatial_threshold , 0 , 1)
+
+        fromlist = []
+        tolist = []
+
+        with tqdm(total = len(coordinate_matrix1)) as pbar_pytorch_geom:
+            for i in range(len(coordinate_matrix1)):
+                temp = coordinate_matrix1[i,:]
+                selectindex = np.where(temp > 0)[0].tolist()
+                for index in selectindex:
+                    fromlist.append(int(i))
+                    tolist.append(int(index))
+                pbar_pytorch_geom.update()
+
+        edge_index = torch.tensor([fromlist, tolist], dtype=torch.long)
+        x = torch.tensor(supernode_relate_value[2], dtype=torch.float)
+        data = Data(x=x, edge_index=edge_index)
+
+        node_dict = pd.DataFrame.from_dict(node_dict, orient='index')
+        node_dict.to_csv(os.path.join(superpatch_dir, sample + '_' + str(threshold) + '.csv'))
+        torch.save(data, os.path.join(superpatch_dir, sample+ '_' + str(threshold) + '_graph_torch.pt'))
 
 def Parser_main():
     
@@ -430,7 +429,6 @@ def main():
     image_dir = Argument.imagedir
     save_dir = Argument.graphdir
     gpu = Argument.gpu
-    device = torch.device(int(gpu) if torch.cuda.is_available() else "cpu")
     files = os.listdir(image_dir)
     
     if os.path.exists(save_dir) is False:
