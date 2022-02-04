@@ -70,7 +70,7 @@ def calculate_label_distribution(patch_list, graph_cluster_num, cluster_num, sav
     plt.clf()
     plt.close()
 
-def calculate_label_edge_distribution(label_df, label_dir, edge_array, graph_custer_num, patch_cluster_num, root_dir, pt_rootdir, csv_rootdir):
+def calculate_label_edge_distribution(label_df, label_dir, edge_array, graph_custer_num, patch_cluster_num, root_dir, pt_rootdir, csv_rootdir, IG_type):
     WSI_root = '/mnt/nvme1n1/CCRCC_WSI/'
     WSI_list = os.listdir(WSI_root)
     WSI_list = [os.path.join(WSI_root, item) for item in WSI_list]
@@ -87,7 +87,7 @@ def calculate_label_edge_distribution(label_df, label_dir, edge_array, graph_cus
         WSI_name = list(WSI_ID_link[WSI_ID_link['path ID'] == patient]['deidentify'])
         WSI_name = [item for item in WSI_name if ('_').join(subgraph.split('_')[1:5]) in item]
 
-        patient_item = root_dir + wsi_id + '_0/IG_again/' + wsi_id + '_0_Top_IG_TME_subgraph_small_cap_subgraph_exist_formal_setting_normal_filter.csv'
+        patient_item = root_dir + wsi_id + '_0/IG_again/' + wsi_id + '_0_' + IG_type +'_IG_TME_subgraph_small_cap_subgraph_exist_formal_setting_normal_filter.csv'
 
         WSI = osd.open_slide('/mnt/nvme1n1/CCRCC_WSI/' + WSI_name[0] + '.svs')
         WSI_level = 1
@@ -391,7 +391,7 @@ def cluster_analysis(rootdir, pt_rootdir, threshold, IG_type):
     return IG_whole_feature, Patient_ID_list, IG_ID_list, IG_length_list, Surv, Event, Patient_item
 
 
-def patch_sampling(rootdir, savedir, subgraph_df, label_df, patch_cluster_num, length_df, pt_rootdir):
+def patch_sampling(rootdir, savedir, subgraph_df, label_df, patch_cluster_num, length_df, pt_rootdir, IG_type):
     savedir = os.path.join(savedir, str(patch_cluster_num))
     if os.path.exists(savedir) == False:
         os.mkdir(savedir)
@@ -434,7 +434,7 @@ def patch_sampling(rootdir, savedir, subgraph_df, label_df, patch_cluster_num, l
         Patient_item = [os.path.join(New_dir, item) for item in New_item if
                         '_exist_formal_setting_normal_filter.csv' in item]
 
-        Patient_item = [item for item in Patient_item if 'Top' in item]
+        Patient_item = [item for item in Patient_item if IG_type in item]
         subgraph_num_list = [patch.split('_')[-1] for patch in patch_list if
                              ('_').join(Patient.split('_')[0:5]) in patch]
 
@@ -470,7 +470,7 @@ def patch_sampling(rootdir, savedir, subgraph_df, label_df, patch_cluster_num, l
 
     return patch_df, graph_label_df, Subgraph_whole_feature, embeddings, kmeans
 
-def visualization(sampled_subgraph, sampled_patch, whole_feature, embedding, kmeans, graph_cluster_num, patch_cluster_num, savedir, label_list, root_dir, pt_rootdir, csv_rootdir):
+def visualization(sampled_subgraph, sampled_patch, whole_feature, embedding, kmeans, graph_cluster_num, patch_cluster_num, savedir, label_list, root_dir, pt_rootdir, csv_rootdir, IG_type):
     sampled_patch['label'] = kmeans.labels_
     label_dict = {}
     for label in label_list:
@@ -479,7 +479,7 @@ def visualization(sampled_subgraph, sampled_patch, whole_feature, embedding, kme
             os.mkdir(label_dir)
         edge_array = np.zeros((patch_cluster_num, patch_cluster_num))
         edge_array = calculate_label_edge_distribution(sampled_patch[sampled_patch['graph_label'] == label], label_dir,
-                                                       edge_array, graph_cluster_num, patch_cluster_num, root_dir, pt_rootdir, csv_rootdir)
+                                                       edge_array, graph_cluster_num, patch_cluster_num, root_dir, pt_rootdir, csv_rootdir, IG_type)
         normalize = (edge_array - edge_array.min()) / (edge_array.max() - edge_array.min())
         label_dict[label] = normalize
         sns.heatmap(label_dict[label], cmap='plasma')
@@ -489,7 +489,7 @@ def visualization(sampled_subgraph, sampled_patch, whole_feature, embedding, kme
         plt.clf()
         plt.close()
 
-def patch_visualization(patch_list, patch_cluster_num, patch_save_dir, root_dir, pt_rootdir, csv_rootdir):
+def patch_visualization(patch_list, patch_cluster_num, patch_save_dir, root_dir, pt_rootdir, csv_rootdir, IG_type):
 
     subgraph_name = patch_list['column']
     node_list = []
@@ -531,7 +531,7 @@ def patch_visualization(patch_list, patch_cluster_num, patch_save_dir, root_dir,
             WSI_name = list(WSI_ID_link[WSI_ID_link['path ID'] == patient]['deidentify'])
             WSI_name = [item for item in WSI_name if ('_').join(subgraph.split('_')[1:5]) in item]
 
-            patient_item = root_dir + wsi_id + '_0/IG_again/' + wsi_id + '_0_Top_IG_TME_subgraph_small_cap_subgraph_exist_formal_setting_normal_filter.csv'
+            patient_item = root_dir + wsi_id + '_0/IG_again/' + wsi_id + '_0_' + IG_type +'_IG_TME_subgraph_small_cap_subgraph_exist_formal_setting_normal_filter.csv'
             WSI = osd.open_slide('/mnt/nvme1n1/CCRCC_WSI/' + WSI_name[0] + '.svs')
             WSI_level = 1
             WSI_Downsample_ratio = int(WSI.level_downsamples[WSI_level])
@@ -603,10 +603,10 @@ def main():
     subgraph_df, label_df, length_df, diff_df, pvalue_df = clustering(IG_whole_feature, Patient_ID_list, graph_cluster_num, IG_ID_list, IG_length_list, Surv, Event,IG_type, graph_save_dir)
     
     graph_cluster_label_list = range(graph_cluster_num)
-    sampled_subgraph, sampled_patch, whole_feature, embedding, kmeans = patch_sampling(rootdir, patch_savedir, subgraph_df, label_df, patch_cluster_num, length_df, pt_rootdir)
+    sampled_subgraph, sampled_patch, whole_feature, embedding, kmeans = patch_sampling(rootdir, patch_savedir, subgraph_df, label_df, patch_cluster_num, length_df, pt_rootdir, IG_type)
     patch_visualization(sampled_patch, patch_cluster_num, patch_savedir,rootdir, pt_rootdir, csv_dir)
     calculate_label_distribution(sampled_patch, graph_cluster_num, patch_cluster_num, graph_save_dir)
-    visualization(sampled_subgraph, sampled_patch, whole_feature, embedding, kmeans, graph_cluster_num, patch_cluster_num, graph_save_dir, graph_cluster_label_list, rootdir, pt_rootdir, csv_dir)
+    visualization(sampled_subgraph, sampled_patch, whole_feature, embedding, kmeans, graph_cluster_num, patch_cluster_num, graph_save_dir, graph_cluster_label_list, rootdir, pt_rootdir, csv_dir, IG_type)
 
 if __name__ == "__main__":
     main()

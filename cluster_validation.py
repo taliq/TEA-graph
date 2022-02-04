@@ -100,7 +100,7 @@ def clustering(feature, Patient_ID_list, cluster_num, ID_list, length_list, Surv
     Label_group_index = np.zeros((len(Patient_ID_list), cluster_num))
 
     for item in range(Group_count.shape[1]):
-        Label_group_index[:, item][np.array((Group_count[item] > Group_count[item].median()))] = 1
+        Label_group_index[:, item][np.array((Group_count[item] > 5))] = 1
 
     Label_group_index = pd.DataFrame(Label_group_index)
     Whole_count_df = pd.DataFrame({'ID': Patient_ID_list, 'Surv': Surv,  'Event': Event})
@@ -402,16 +402,16 @@ def graph_data_processing(high_diff_df, mid_diff_df, low_diff_df, high_pvalue_df
     graph_cluster_diff_sum_dict[graph_cluster_num] = [sum(high_diff_df.values())/graph_cluster_num, sum(mid_diff_df.values())/graph_cluster_num, sum(low_diff_df.values())/graph_cluster_num]
     graph_cluster_p_num_dict[graph_cluster_num] = [(high_pvalue_df < 0.05).sum(axis = 1).item(), (mid_pvalue_df < 0.05).sum(axis = 1).item(), (low_pvalue_df<0.05).sum(axis=1).item()]
     graph_cluster_p_num_dict_strict[graph_cluster_num] = [(high_pvalue_df < 0.01).sum(axis = 1).item(), (mid_pvalue_df < 0.01).sum(axis = 1).item(), (low_pvalue_df<0.01).sum(axis=1).item()]
-    graph_cluster_average_p_dict[graph_cluster_num] = ((high_pvalue_df < 0.01).sum(axis = 1).item() + (low_pvalue_df<0.01).sum(axis=1).item()) / (2* graph_cluster_num)
+    graph_cluster_average_p_dict[graph_cluster_num] = [((high_pvalue_df < 0.01).sum(axis = 1).item() + (low_pvalue_df<0.01).sum(axis=1).item()) / (2* graph_cluster_num)]
 
     return graph_cluster_diff_dict, graph_cluster_p_dict, graph_cluster_diff_sum_dict, graph_cluster_p_num_dict, graph_cluster_p_num_dict_strict,graph_cluster_average_p_dict
 
 def Parser_main():
-    
+
     parser = argparse.ArgumentParser(description="TEA-graph superpatch generation")
     parser.add_argument("--rootdir", default="/mnt/sdb/supernode_WSI/IG_analysis_BORAME_final/2022-01-27_08:58:10/0/IG_analysis/", help="patient_IG_analysis_result_dir", type = str)
     parser.add_argument("--pt_dir",default='/mnt/sdb/supernode_WSI/0.75/' ,help="patient_graph_torch_dir",type=str)
-    parser.add_argument("--save_dir",default="/home/seob/DSA/figure_six/220202_figure_six_revision_",help="save prefix",type=str)
+    parser.add_argument("--save_dir",default="/mnt/sdd/figure_six/220203_figure_six_revision_",help="save prefix",type=str)
     parser.add_argument("--seed",default=1234567,help="random seed",type=int)
     parser.add_argument("--imagesize", default = 256, help ="crop image size", type = int)
     parser.add_argument("--threshold", default = 0.75, help = "cosine similarity threshold", type = float)
@@ -424,9 +424,9 @@ def main():
     rootdir = Argument.rootdir
     pt_rootdir = Argument.pt_dir
     seed_num = Argument.seed
-    threshold_list = ['0', '10', '15', '20', '25', '30', '35', '40']
-    patch_cluster_num_list = [3, 5, 7, 8, 10, 13, 15, 17, 20, 23, 25, 27, 30]
-    graph_cluster_num_list = [10,12,15,18,20,23,25,28,30]
+    threshold_list = ['10']
+    patch_cluster_num_list = [5, 10, 15,  20, 25, 30]
+    graph_cluster_num_list = [15]
     
     graph_cluster_diff_dict = {}
     graph_cluster_p_dict = {}
@@ -437,7 +437,7 @@ def main():
     
     with tqdm(total = len(threshold_list)) as pbar_threshold:
         for threshold in threshold_list:
-            savedir = Argument.save_dir + threshold
+            savedir = Argument.save_dir + threshold + '_patch'
             if os.path.exists(savedir) == False:
                 os.mkdir(savedir)
             graph_savedir = os.path.join(savedir, 'graph')
@@ -462,11 +462,7 @@ def main():
                     mid_subgraph_df, mid_label_df, mid_length_df, mid_diff_df, mid_pvalue_df = clustering(Mid_IG_whole_feature, Patient_ID_list, graph_cluster_num, Mid_ID_list, Mid_length_list, Surv, Event,'Mid', graph_save_dir)
                     low_subgraph_df, low_label_df, low_length_df, low_diff_df, low_pvalue_df = clustering(Low_IG_whole_feature, Patient_ID_list, graph_cluster_num, Low_ID_list, Low_length_list, Surv, Event,'Low', graph_save_dir)
                     
-                    graph_cluster_diff_dict, graph_cluster_p_dict, graph_cluster_diff_sum_dict, 
-                    graph_cluster_p_num_dict, graph_cluster_p_num_dict_strict,graph_cluster_average_p_dict = graph_data_processing(high_diff_df, mid_diff_df, low_diff_df, high_pvalue_df, mid_pvalue_df, low_pvalue_df,
-                                                                                                                                  graph_cluster_diff_dict, graph_cluster_p_dict, graph_cluster_diff_sum_dict, graph_cluster_p_num_dict,
-                                                                                                                                  graph_cluster_p_num_dict_strict, graph_cluster_average_p_dict,graph_cluster_num, graph_savedir)
-            
+                    graph_cluster_diff_dict, graph_cluster_p_dict, graph_cluster_diff_sum_dict, graph_cluster_p_num_dict, graph_cluster_p_num_dict_strict,graph_cluster_average_p_dict = graph_data_processing(high_diff_df, mid_diff_df, low_diff_df, high_pvalue_df, mid_pvalue_df, low_pvalue_df,graph_cluster_diff_dict, graph_cluster_p_dict, graph_cluster_diff_sum_dict, graph_cluster_p_num_dict, graph_cluster_p_num_dict_strict, graph_cluster_average_p_dict,graph_cluster_num, graph_savedir)
                     patch_sampling(rootdir, patch_savedir, high_subgraph_df, high_label_df, patch_cluster_num_list, high_length_df,pt_rootdir)
                     patch_sampling(rootdir, patch_savedir, mid_subgraph_df, mid_label_df, patch_cluster_num_list, mid_length_df,pt_rootdir)
                     patch_sampling(rootdir, patch_savedir, low_subgraph_df, low_label_df, patch_cluster_num_list, low_length_df,pt_rootdir)
@@ -481,10 +477,10 @@ def main():
             graph_cluster_average_p_df = pd.DataFrame.from_dict(graph_cluster_average_p_dict)
             graph_cluster_average_p_df.to_csv(os.path.join(graph_savedir, 'graph_cluster_p_avereage_dict.csv'))
             
-            plt.plot(graph_cluster_num_list, graph_cluster_average_p_dict)
+            plt.plot(graph_cluster_num_list, graph_cluster_average_p_dict.values())
             tick = range(min(graph_cluster_num_list) , max(graph_cluster_num_list)+1)
             plt.xticks(tick)
-            plt.savefig("/home/seob/DSA/for_revision/p_strict_avg_new.pdf", transparent = True)
+            plt.savefig(os.path.join(graph_savedir, "p_strict_avg_new.pdf"), transparent = True)
             plt.clf()
 
             pbar_threshold.update()
