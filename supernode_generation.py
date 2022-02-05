@@ -349,7 +349,7 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
             if arg_value in node_dict.keys():
                 for adj_item in node_dict[arg_value]:
                     if adj_item in node_dict.keys():
-                        node_dict[c].pop(adj_item, None)
+                        node_dict[c].pop(adj_item)
                         arglist_strict=np.delete(arglist_strict, np.argwhere(arglist_strict == adj_item))
             
         for key_value in node_dict.keys():
@@ -410,10 +410,10 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
 def Parser_main():
     
     parser = argparse.ArgumentParser(description="TEA-graph superpatch generation")
-    parser.add_argument("--database", default='TCGA', help="Use in the savedir", type = str)
-    parser.add_argument("--cancertype",default='BRCA',help="cancer type",type=str)
-    parser.add_argument("--graphdir",default='/mnt/sde/TCGA_graph',help="graph save dir",type=str)
-    parser.add_argument("--imagedir",default='/mnt/sde/NLST_new',help="svs file location",type=str)
+    parser.add_argument("--database", default='BORAMAE', help="Use in the savedir", type = str)
+    parser.add_argument("--cancertype",default='CCRCC',help="cancer type",type=str)
+    parser.add_argument("--graphdir",default="/home/seob/DSA/code_validation/graph_dir/",help="graph save dir",type=str)
+    parser.add_argument("--imagedir",default="/home/seob/DSA/code_validation/svs_dir/",help="svs file location",type=str)
     parser.add_argument("--weight_path",default=None,help="pretrained weight path",type=str)
     parser.add_argument("--imagesize", default = 256, help ="crop image size", type = int)
     parser.add_argument("--threshold", default = 0.75, help = "cosine similarity threshold", type = float)
