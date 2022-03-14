@@ -15,4 +15,8 @@ Graph deep learning on whole slide image predicts the context-aware prognostic p
 ## Visualization of IG (Integrated gradients) value on WSI
 * Run the Subgraph_visualization.py
 
+## Acknowledgments
+* http://github.com/mahmoodlab/Patch-GCN
+* http://github.com/lukemelas/EfficientNet-PyTorch
+
 BiNEL (http://www.binel.snu.ac.kr) - This code is made available under the MIT License and is available for non-commercial academic purposes
