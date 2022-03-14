@@ -2,8 +2,8 @@ Graph deep learning on whole slide image predicts the context-aware prognostic p
 =====================
 
 ## Dependencies
-To install the dependencies for this project, see the "requirements.yaml"
-Tested on Nvidia TESLA V100 x 2 with CUDA 11.1
+* To install the dependencies for this project, see the "requirements.yaml"
+* Tested on Nvidia TESLA V100 x 2 with CUDA 11.1
 
 ## Processing Whole slide image (WSI) into superpatch graph
 
