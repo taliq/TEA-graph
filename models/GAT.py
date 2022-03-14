@@ -22,25 +22,12 @@ from torch_sparse import set_diag
 
 from tqdm import tqdm
 from models.model_utils import weight_init
+from models.model_utils import decide_loss_type
 from torch_geometric.nn.inits import kaiming_uniform
 
 from models.pre_layer import preprocess
 from models.post_layer import postprocess
 
-def decide_loss_type(loss_type, dim):
-
-    if loss_type == "RELU":
-        loss_fun = LeakyReLU(negative_slope=0.2)
-    elif loss_type == "SELU":
-        loss_fun = SELU()
-    elif loss_type == "PRELU":
-        loss_fun = PReLU(init=0.2, num_parameters=dim)
-    elif loss_type == "GELU":
-        loss_fun = GELU()
-    elif loss_type == "ELU":
-        loss_fun = ELU()
-
-    return loss_fun
 
 class GAT_module(torch.nn.Module):
 

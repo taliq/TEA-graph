@@ -144,7 +144,7 @@ def Train(Argument):
 
     batch_num = int(Argument.batch_size)
     device = torch.device(int(Argument.gpu))
-    Metadata = pd.read_csv('../Sample_data_for_demo/Metadata/KIRC_clinical.tsv', sep='\t')
+    Metadata = pd.read_csv('./Sample_data_for_demo/Metadata/KIRC_clinical.tsv', sep='\t')
     TrainRoot = TrainValid_path(Argument.DatasetType)
     Trainlist = os.listdir(TrainRoot)
     Trainlist = [item for c, item in enumerate(Trainlist) if '0_graph_torch_4.3_artifact_sophis_final.pt' in item]
