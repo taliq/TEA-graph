@@ -6,9 +6,13 @@ Graph deep learning on whole slide image predicts the context-aware prognostic p
 * Tested on Nvidia TESLA V100 x 2 with CUDA 11.1
 
 ## Processing Whole slide image (WSI) into superpatch graph
+* First, run the ./Superpatch_network_construction/supernode_generation.py
+* And then, run the ./Superpatch_network_construction/superpatch-network_construction.py
 
 ## Training TEA-graph using superpatch graph
+* Run the main.py with appropriate hyperparameters
 
 ## Visualization of IG (Integrated gradients) value on WSI
+* Run the Subgraph_visualization.py
 
 BiNEL (http://www.binel.snu.ac.kr) - This code is made available under the MIT License and is available for non-commercial academic purposes

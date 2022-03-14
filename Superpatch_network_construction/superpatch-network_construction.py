@@ -40,17 +40,13 @@ def Select_second_min(center_node_label, coordinate_matrix):
 
 def tme_visualization(sample, centernode, hop_num, distance_thresh, correlation_value, correlation_score=0.5):
     root_dir = '/home/taliq_lee/supernode_WSI/0.65_whole_new/'
-    #root_dir = "/home/taliq_lee/supernode_WSI/" + "/" + str(correlation_value) + "/"
     origin_file_dir = root_dir
-    #origin_file_dir = "/mnt/sdb/supernode_WSI/0.75_env_new/"
 
     if correlation_value == 0.5:
         different_value = 1
     else:
         different_value = 0
 
-    # savedir = "/home/taliq_lee/2021_DSA/Distance/0.5_modify/"
-    # exclude = ['AA0196']
     supernode_sample = os.listdir(root_dir)
     origin_file_list = os.listdir(origin_file_dir)
 
@@ -87,17 +83,13 @@ def tme_visualization(sample, centernode, hop_num, distance_thresh, correlation_
                         graph = Data.from_dict(torch.load(pt))
                     else:
                         graph = torch.load(pt)
-                    # modify_graph = g_util.remove_isolated_nodes(graph.edge_index, num_nodes=graph.x.shape[0])
-                    # graph.edge_index = modify_graph[0]
 
-                    # graph.x = graph.x[modify_graph]
                     if os.path.isfile(supernode_path):
 
                         supernode = pd.read_csv(supernode_path)
                         location = pd.read_csv(location)
 
                         sample = sample_name.split('_')[0]
-                        # date = sample_name.split('_')[1]+'_'+ sample_name.split('_')[2]+'_'+ sample_name.split('_')[3]+'_'+ sample_name.split('_')[4]
 
                         supernode_x = []
                         supernode_y = []
