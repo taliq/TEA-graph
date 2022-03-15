@@ -413,7 +413,7 @@ def Parser_main():
     parser.add_argument("--database", default='BORAMAE', help="Use in the savedir", type = str)
     parser.add_argument("--cancertype",default='CCRCC',help="cancer type",type=str)
     parser.add_argument("--graphdir",default="./Sample_data_for_demo/Graph_test/",help="graph save dir",type=str)
-    parser.add_argument("--imagedir",default="./Sample_data_for_demo/Raw_WSI/svs_dir/",help="svs file location",type=str)
+    parser.add_argument("--imagedir",default="./Sample_data_for_demo/Raw_WSI/",help="svs file location",type=str)
     parser.add_argument("--weight_path",default=None,help="pretrained weight path",type=str)
     parser.add_argument("--imagesize", default = 256, help ="crop image size", type = int)
     parser.add_argument("--threshold", default = 0.75, help = "cosine similarity threshold", type = float)

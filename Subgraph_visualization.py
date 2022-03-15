@@ -7,42 +7,24 @@ Created on Tue Mar  2 09:58:47 2021
 """
 import os
 import torch
-import random
-import torch.nn.functional as F
 import torch_geometric.transforms as T
-import sklearn.preprocessing as preprocessing
-
-from torch.nn import Linear
 
 from torch_geometric.data import DataLoader
 from torch_geometric.data import Data
 from torch_geometric.data import Dataset
-from torch_geometric.data import DataListLoader
-
-from torch_geometric.utils import dropout_adj
-from torch_geometric.utils import to_networkx
-
-from captum.attr import Saliency, IntegratedGradients, GradientShap
 
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-import networkx as nx
-from networkx.drawing.nx_agraph import graphviz_layout
 
-from collections import defaultdict
 from tqdm import tqdm
 
-from sklearn.preprocessing import maxabs_scale
 from utils import TrainValid_path
 from utils import train_test_split
 from model_selection import model_selection
 
 from matplotlib import cm
-import matplotlib
 import pandas as pd
 import networkx as nx
-from networkx.drawing.nx_agraph import graphviz_layout
 
 import openslide as osd
 import cv2 as cv
@@ -50,7 +32,7 @@ from PIL import Image
 from PIL import ImageFilter
 
 def model_forward(edge_mask, model, data):
-    #edge_mask = edge_mask.to(data.x.device)
+
     out = model(data, edge_mask)
 
     return out
@@ -98,10 +80,6 @@ def Whole_supernode_vis(WSI, Position_pd, Location_pd, Select_ID, core_dir, edge
                                                                              Env_x * WSI_patch_dimension:(
                                                                                                                  Env_x + 1) * WSI_patch_dimension] + 1
 
-    # WSI_image.save(os.path.join(core_dir, Select_ID + '_WSI.png'))
-
-    # Positive_count = np.where(Image_IG_mask_count > 1)
-    # Image_IG_mask[np.where(Image_IG_mask_count > 1)[0]] = Image_IG_mask[np.where(Image_IG_mask_count > 1)[0]] / Image_IG_mask_count[np.where(Image_IG_mask_count > 1)[0]]
     Image_IG_mask = Image_IG_mask / Image_IG_mask_count
     Image_IG_mask = np.uint8(255 * cm.coolwarm(Image_IG_mask))
     Image_IG_mask = Image.fromarray(Image_IG_mask)
@@ -113,17 +91,11 @@ def Whole_supernode_vis(WSI, Position_pd, Location_pd, Select_ID, core_dir, edge
     Image_mask = cv.applyColorMap(np.uint8(255 * Image_mask), cv.COLORMAP_JET)
     Colover_converted_mask = cv.cvtColor(Image_mask, cv.COLOR_BGR2RGB)
     Image_mask = Image.fromarray(Colover_converted_mask)
-    # cv.imwrite(os.path.join(core_dir, Select_ID + '_WSI_Image_mask.png'),Image_mask)
 
     Mask_fig = Image_mask
-    # Mask_fig = Image.open(os.path.join(core_dir, Select_ID + '_WSI_Image_mask.png'))
     Mask_fig = Mask_fig.convert('RGBA')
-    # BlendImage = Image.blend(WSI_image, Mask_fig, alpha=0.2)
-    # BlendImage.save(os.path.join(core_dir, Select_ID + '_WSI_superpatch.png'))
 
     Mask_fig_IG = Image_IG_mask.convert('RGBA')
-    # BlendImage = Image.blend(WSI_image, Mask_fig_IG, alpha=0.6)
-    # BlendImage.save(os.path.join(core_dir, Select_ID + '_WSI_superpatch_IG.png'))
 
     WSI_node_idx = Position_pd['Unnamed: 0.1'].tolist()
     WSI_node_idx = [int(item) for item in WSI_node_idx]
@@ -138,13 +110,7 @@ def Whole_supernode_vis(WSI, Position_pd, Location_pd, Select_ID, core_dir, edge
     WSI_graph = nx.Graph()
     WSI_graph.add_nodes_from(list(range(len(WSI_node_idx))))
     WSI_graph.add_edges_from(WSI_edge_index)
-    #temp_dict = {}
-    #for edge_item, edge_mask_value in zip(list(WSI_graph.edges), attention_val.flatten().tolist()):
-    #    temp_dict[edge_item] = {'attention': edge_mask_value}
-    # temp_dict = dict.fromkeys(list(WSI_graph.edges), edge_mask_norm.flatten().tolist())
-    #nx.set_edge_attributes(WSI_graph, temp_dict)
     WSI_graph.remove_edges_from(nx.selfloop_edges(WSI_graph))
-    #removed_attention_val = list(nx.get_edge_attributes(WSI_graph, 'attention').values())
 
     my_dpi = 96
     plt.figure(figsize=(WSI_image.size[0] / my_dpi, WSI_image.size[1] / my_dpi), dpi=96)
@@ -170,22 +136,6 @@ def Whole_supernode_vis(WSI, Position_pd, Location_pd, Select_ID, core_dir, edge
     plt.cla()
     plt.close()
 
-    """
-    my_dpi = 96
-    plt.figure(figsize=(WSI_image.size[0] / my_dpi, WSI_image.size[1] / my_dpi), dpi=96)
-    plt.axis('off')
-    nodes = nx.draw_networkx_nodes(WSI_graph, pos=pos_dict, node_size=20, alpha=0.2, node_color=(edge_mask_norm), cmap="coolwarm", vmin=0.0, vmax=1.0)
-    edges = nx.draw_networkx_edges(WSI_graph, pos=pos_dict, connectionstyle='arc3,rad=0.2',
-                                                    edge_color=plt.cm.cool(np.array(removed_attention_val)), width=1, arrows=False, edge_cmap="coolwarm",
-                                                    edge_vmin=0.0, edge_vmax=1.0)
-    plt.subplots_adjust(left=0., right=1., top=1., bottom=0.)
-    plt.gca().invert_yaxis()
-    plt.savefig(os.path.join(core_dir, Select_ID + '_WSI_graph_w_IG_w_attention.pdf'), transparent=True)
-    plt.clf()
-    plt.cla()
-    plt.close()
-    """
-
     return Mask_fig_IG
 
 def IG_TME_vis(IG_nodes, row, col, IG_edge_index, Position_pd, Location_pd, core_dir, Select_ID, edge_mask_norm, edge_mask):
@@ -197,8 +147,6 @@ def IG_TME_vis(IG_nodes, row, col, IG_edge_index, Position_pd, Location_pd, core
     match_edge_idx = []
 
     Mid_IG_WSI_graph.remove_edges_from(nx.selfloop_edges(Mid_IG_WSI_graph))
-    # removed_attention_val = list(nx.get_edge_attributes(Mid_IG_WSI_graph, 'attention').values())
-
     Mid_IG_subgraph = [Mid_IG_WSI_graph.subgraph(c).copy() for c in nx.connected_components(Mid_IG_WSI_graph) if
                        (len(c) > 10 & len(c) < 200)]
 
@@ -270,8 +218,6 @@ def IG_subgraph_vis(row, col, Position_pd, Location_pd, Select_ID, core_dir, dat
     Top_IG_nodes = np.where(edge_mask > top_threshold)[0]
     Top_IG_dir = os.path.join(core_dir, "IG_again")
     Top_IG_dir = os.path.join(Top_IG_dir, "Top_IG")
-    #if os.path.isdir(Top_IG_dir):
-    #    shutil.rmtree(Top_IG_dir)
     if not os.path.isdir(Top_IG_dir):
         os.makedirs(Top_IG_dir)
 
@@ -286,8 +232,6 @@ def IG_subgraph_vis(row, col, Position_pd, Location_pd, Select_ID, core_dir, dat
                         set(np.where(edge_mask > mid_threshold_low)[0]))
     Mid_IG_dir = os.path.join(core_dir, "IG_again")
     Mid_IG_dir = os.path.join(Mid_IG_dir, "Mid_IG")
-    #if os.path.isdir(Mid_IG_dir):
-    #    shutil.rmtree(Mid_IG_dir)
     if not os.path.isdir(Mid_IG_dir):
         os.makedirs(Mid_IG_dir)
 
@@ -301,8 +245,6 @@ def IG_subgraph_vis(row, col, Position_pd, Location_pd, Select_ID, core_dir, dat
     Low_IG_nodes = np.where(edge_mask < low_threshold)[0]
     Low_IG_dir = os.path.join(core_dir, "IG_again")
     Low_IG_dir = os.path.join(Low_IG_dir, "Low_IG")
-    #if os.path.isdir(Low_IG_dir):
-    #    shutil.rmtree(Low_IG_dir)
     if not os.path.isdir(Low_IG_dir):
         os.makedirs(Low_IG_dir)
 
@@ -323,40 +265,16 @@ def explain(edge_mask, max_IG, min_IG):
     edge_mask_norm[lower_threshold_node] = min_IG
     edge_mark_remove = edge_mask_norm.copy()
 
-    """
-    if len(upper_threshold_node) > 0:
-        edge_mask_norm[upper_threshold_node] = max_IG
-    else:
-        edge_mask_norm = edge_mask_norm.tolist()
-        edge_mask_norm.append(max_IG)
-        edge_mask_norm = np.array(edge_mask_norm)
-        add_count = add_count + 1
-    if len(lower_threshold_node) > 0:
-        edge_mask_norm[lower_threshold_node] = min_IG
-    else:
-        edge_mask_norm = edge_mask_norm.tolist()
-        edge_mask_norm.append(min_IG)
-        edge_mask_norm = np.array(edge_mask_norm)
-        add_count = add_count + 1
 
-    edge_mark_remove = edge_mask_norm.copy()
-    edge_mask_norm = preprocessing.maxabs_scale(edge_mask_norm)
-    edge_mask_norm = edge_mask_norm[0:edge_mask_norm.shape[0] - add_count,:]
-    """
     edge_mask_norm = (edge_mask_norm - min_IG) / (max_IG - min_IG)
 
     local_edge_mask_norm = edge_mark_remove.copy()
     edge_mask_positive = np.where(edge_mark_remove >= 0)[0]
     edge_mask_negative = np.where(edge_mark_remove < 0)[0]
     posnorm = edge_mark_remove[edge_mask_positive] / max_IG
-    # posnorm = preprocessing.minmax_scale(edge_mark_remove[edge_mask_positive])
-    # posnorm = (edge_mask[edge_mask_positive] - edge_mask[edge_mask_positive].min()) / (2 * edge_mask[edge_mask_positive].max())
     local_edge_mask_norm[edge_mask_positive] = posnorm
     negnorm = -1 * edge_mark_remove[edge_mask_negative] / min_IG
-    # negnorm = -1 * preprocessing.minmax_scale(np.abs(edge_mark_remove[edge_mask_negative]))
-    # negnorm = (edge_mask[edge_mask_negative] - edge_mask[edge_mask_negative].min()) / (2 * np.abs(edge_mask[edge_mask_negative]).max())
     local_edge_mask_norm[edge_mask_negative] = negnorm
-    # local_edge_mask_norm = preprocessing.minmax_scale(local_edge_mask_norm)
 
     local_edge_mask_norm = local_edge_mask_norm / 2.0 + 0.5
 
@@ -376,7 +294,6 @@ class CoxGraphDataset(Dataset):
         self.survlist = survlist
         self.stagelist = stagelist
         self.censorlist = censorlist
-        #random.shuffle(self.filelist)
         self.metadata = metadata
         self.mode = mode
         self.model = model
@@ -432,9 +349,6 @@ def whole_IG_normalize(rootdir):
 
     upper_outlier = np.quantile(Whole_IG_value[pos_term], 0.98)
     lower_outlier = np.quantile(Whole_IG_value[neg_term], 0.02)
-
-    # upper_outlier_origin = np.quantile(Whole_IG_value, 0.98)
-    # lower_outlier_origin = np.quantile(Whole_IG_value, 0.02)
 
     outlier_removed_IG_value = Whole_IG_value[
         list(set(np.where(Whole_IG_value < upper_outlier)[0]) & set(np.where(Whole_IG_value > lower_outlier)[0]))]
@@ -587,8 +501,6 @@ def Subgraph_analysis_vis(Argument):
                         edge_mask_norm, edge_mask_norm_local = explain(edge_mask, max_IG, min_IG)
 
                         end_idx_adj = start_idx_adj + adj_batch_item_num
-
-                        # attention_value = 0
 
                         inside_row = row[start_idx_adj:end_idx_adj].cpu().detach().numpy()
                         inside_col = col[start_idx_adj:end_idx_adj].cpu().detach().numpy()
