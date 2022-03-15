@@ -411,8 +411,8 @@ def supernode_generation(image, model_ft, device, Argument, save_dir):
 def Parser_main():
     
     parser = argparse.ArgumentParser(description="TEA-graph superpatch generation")
-    parser.add_argument("--database", default='BORAMAE', help="Use in the savedir", type = str)
-    parser.add_argument("--cancertype",default='CCRCC',help="cancer type",type=str)
+    parser.add_argument("--database", default='TCGA', help="Use in the savedir", type = str)
+    parser.add_argument("--cancertype",default='KIRC',help="cancer type",type=str)
     parser.add_argument("--graphdir",default="./Sample_data_for_demo/Graph_test/",help="graph save dir",type=str)
     parser.add_argument("--imagedir",default="./Sample_data_for_demo/Raw_WSI/",help="svs file location",type=str)
     parser.add_argument("--weight_path",default=None,help="pretrained weight path",type=str)
