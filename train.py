@@ -1,33 +1,19 @@
 # -*- coding: utf-8 -*-
 
-import random
 import os
 import copy
 import torch
 import torch_geometric.transforms as T
 import pandas as pd
 import numpy as np
-import sys
-import torch.nn.functional as F
-import torch.nn as nn
 
 from torch import optim
 from torch_geometric.transforms import Polar
 from torch_geometric.data import DataListLoader
-from torch_geometric.data import DataLoader
 from torch_geometric.nn import DataParallel
 from torch_geometric.data import Data
 from torch_geometric.data import Dataset
-from torch_geometric.utils import dropout_adj
-from torch_geometric.utils import add_self_loops
-from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingWarmRestarts, OneCycleLR
-from torch_sparse import SparseTensor
-from torch_geometric.nn import GATConv as GATConv_v1
-from torch_geometric.nn import GATv2Conv as GATConv
-from torch_geometric.nn import MessageNorm, PairNorm, GraphSizeNorm
-from torch_ema import ExponentialMovingAverage as EMA
-from torch.nn import BatchNorm1d, LayerNorm
 
 from tqdm import tqdm
 
@@ -41,7 +27,6 @@ from utils import cox_sort
 from utils import accuracytest
 
 from torch.utils.data.sampler import Sampler
-
 
 class Sampler_custom(Sampler):
 

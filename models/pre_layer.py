@@ -97,14 +97,12 @@ class preprocess(torch.nn.Module):
         dropout_rate = argument.dropout_rate
         norm_type = argument.norm_type
 
-        #prelayer_list = [BasicLinear_module(in_f, out_f, dropout_rate)
-        #                   for in_f, out_f in zip(self.prelayernum, self.prelayernum[1:])]
         self.prelayer_blocks = nn.ModuleList([BasicLinear_module(in_f, out_f, dropout_rate, norm_type)
                            for in_f, out_f in zip(self.prelayernum, self.prelayernum[1:])])
 
         self.prelayer_last = Linear(self.prelayernum[-1], argument.attention_head_num * argument.initial_dim)
-        self.edge_position_embedding = nn.Embedding(41, 100)
-        self.edge_angle_embedding = nn.Embedding(41, 100)
+        self.edge_position_embedding = nn.Embedding(11, 100)
+        self.edge_angle_embedding = nn.Embedding(11, 100)
         self.with_edge = argument.with_distance
         self.simple_distance = argument.simple_distance
 
@@ -132,20 +130,18 @@ class preprocess(torch.nn.Module):
         drop_edge_attr_diag = np.zeros((drop_diag_row.shape[0], edge_feature.shape[1]))
         drop_edge_attr_diag[
             ~(drop_diag_row == drop_diag_col).cpu().detach().numpy()] = Non_self_feature.cpu().detach().numpy()
-        #drop_edge_attr_diag = edge_feature.cpu().detach().numpy()
         drop_edge_attr = torch.tensor(drop_edge_attr_diag)
         drop_edge_attr = drop_edge_attr.type(torch.FloatTensor)
-        #drop_edge_attr = drop_edge_attr.to(input_x.device)
 
         if self.simple_distance == "Y":
             pass
         else:
             drop_edge_attr_distance = drop_edge_attr[:, 0]
-            drop_edge_attr_distance = drop_edge_attr_distance // 0.025
+            drop_edge_attr_distance = drop_edge_attr_distance // 0.1
             drop_edge_attr_distance = drop_edge_attr_distance.type(torch.LongTensor)
             drop_edge_attr_distance = drop_edge_attr_distance.to(input_x.device)
             drop_edge_attr_angle = drop_edge_attr[:, 1]
-            drop_edge_attr_angle = drop_edge_attr_angle // 0.025
+            drop_edge_attr_angle = drop_edge_attr_angle // 0.1
             drop_edge_attr_angle = drop_edge_attr_angle.type(torch.LongTensor)
             drop_edge_attr_angle = drop_edge_attr_angle.to(input_x.device)
 

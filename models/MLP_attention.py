@@ -1,28 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import random
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
 
-from torch.nn import Linear, Sequential, ReLU, SELU, PReLU, GELU, Dropout, Conv1d, ELU, LeakyReLU, LayerNorm
-from torch_geometric.nn import GINConv, GCNConv, global_add_pool, global_mean_pool, global_max_pool, GlobalAttention
-from torch_geometric.nn import GATv2Conv as GATConv
-from torch_geometric.nn import MessageNorm, PairNorm, BatchNorm, GraphSizeNorm
-from torch_geometric.utils import degree
-from torch_geometric.utils import k_hop_subgraph
-from torch_geometric.utils import dense_to_sparse
+from torch.nn import Linear, Sequential, PReLU, Dropout, LayerNorm
+from torch_geometric.nn import global_mean_pool
+from torch_geometric.nn import BatchNorm
 from torch_geometric.utils import softmax
-from torch_geometric.nn.inits import kaiming_uniform
-# from torch_geometric.transforms import ToSparseTensor
-from torch_sparse import SparseTensor
-from torch_scatter import scatter
-from torch_sparse import set_diag
 from torch_scatter import scatter_add
 
-from tqdm import tqdm
 from models.model_utils import weight_init
 from models.model_utils import decide_loss_type
 
@@ -32,7 +20,7 @@ from models.post_layer import postprocess
 def BasicLinear(in_f, out_f, dropout_rate):
     return Sequential(
         Linear(in_f, out_f),
-        BatchNorm(out_f),
+        LayerNorm(out_f),
         PReLU(init=0.2),
         Dropout(dropout_rate)
     )
@@ -48,7 +36,6 @@ class attention_module(torch.nn.Module):
         
     def reset_parameters(self):
 
-        #self.que_transform.apply(weight_init)
         init.kaiming_normal_(self.weight.data)
         init.kaiming_normal_(self.que_transform.data)
         init.kaiming_normal_(self.gate_transform.data)
@@ -72,7 +59,6 @@ class MLP_module(torch.nn.Module):
 
         super(MLP_module, self).__init__()
         self.conv = Linear(input_dim, output_dim * head_num)
-        #self.gbn = GraphSizeNorm()
         self.bn = LayerNorm(output_dim * int(head_num))
         self.prelu = decide_loss_type(loss_type)
         self.dropout = Dropout(dropedge_rate)
@@ -119,27 +105,17 @@ class MLP_attention(torch.nn.Module):
         self.dropedge_rate = dropedge_rate
         self.Argument = Argument
         self.heads_num = Argument.attention_head_num
-        self.noise_var = Argument.noise_var_value
-        self.noise_portion = Argument.noise_node_portion
         self.include_edge_feature = Argument.with_distance
         self.layer_num = Argument.number_of_layers
         self.graph_dropout_rate = Argument.graph_dropout_rate
-        self.with_noise = Argument.with_noise
 
         postNum = 0
         self.preprocess = preprocess(Argument)
-        #self.conv1 = GAT_module(256, dim, self.heads_num, self.dropedge_rate, self.dropout_rate, Argument.loss_type, with_edge=Argument.with_distance)
-        #postNum += int(self.heads_num)
 
         self.conv_list = nn.ModuleList([MLP_module(dim * self.heads_num, dim, self.heads_num, self.dropedge_rate, self.graph_dropout_rate, Argument.loss_type, with_edge=Argument.with_distance) for _ in range(int(Argument.number_of_layers))])
         postNum += int(self.heads_num) * len(self.conv_list)
 
         self.postprocess = postprocess(dim * self.heads_num, self.layer_num, dim * self.heads_num, Argument.postlayernum, dropout_rate)
-
-        if self.with_noise == "Y":
-            self.node_denoise_layer = nn.Linear(dim * self.heads_num, 1794)
-            self.edge_denoise_layer = nn.Linear(dim * self.heads_num, 2)
-            #self.risk_prediction_layer = nn.Linear(self.postprocess.postlayernum[-1], 1)
 
         self.final_attention = attention_module(dim * self.heads_num, 100)
         self.risk_prediction_layer = nn.Linear(self.postprocess.postlayernum[-1], 1)
@@ -147,14 +123,10 @@ class MLP_attention(torch.nn.Module):
     def reset_parameters(self):
 
         self.preprocess.reset_parameters()
-        #self.conv1.reset_parameters()
         for i in range(self.Argument.number_of_layers):
             self.conv_list[i].reset_parameters()
         self.postprocess.reset_parameters()
         self.risk_prediction_layer.apply(weight_init)
-        if self.with_noise == "Y":
-            self.node_denoise_layer.apply(weight_init)
-            self.edge_denoise_layer.apply(weight_init)
         self.final_attention.reset_parameters()
 
     def forward(self, data):
@@ -169,43 +141,18 @@ class MLP_attention(torch.nn.Module):
         x0_glob = global_mean_pool(preprocessed_input, batch)
         x_concat = x0_glob
 
-        #x_temp_out = self.conv1(preprocessed_input, preprocess_edge_attr, data.adj_t, batch)
-        #x_glob = global_mean_pool(x_temp_out, batch)
-        #x_concat = torch.cat((x_concat, x_glob), 1)
-        #x_out = x_temp_out + preprocessed_input
-        #final_x = x_out
-        attention_concat = []
-
         x_out = preprocessed_input
         final_x = x_out
         for i in range(int(self.layer_num)):
             x_temp_out, x_temp_out_attention = self.conv_list[i](x_out, preprocess_edge_attr, data.adj_t, batch)
-            #if len(attention_concat) == 0:
-            #    attention_concat = attention_value
-            #else:
-            #    attention_concat = torch.cat((attention_concat, attention_value), 1)
-            #x_glob = self.final_attention(x_temp_out, batch)
-            #x_glob = global_mean_pool(x_temp_out, batch)
             x_concat = torch.cat((x_concat, x_temp_out_attention), 1)
-            x_out = x_temp_out
-            #x_out = x_temp_out + x_out
+            if self.residual == "Y":
+                x_out = x_temp_out + x_out
+            else:
+                x_out = x_temp_out
             final_x = x_out
 
-        #x_concat = self.final_attention(x_out, batch)
         postprocessed_output = self.postprocess(x_concat, batch)
-        #attentioned_product = self.final_attention(postprocessed_output, batch)
-
-        #print(postprocessed_output)
         risk = self.risk_prediction_layer(postprocessed_output)
-        node_noise_value = torch.tensor(0.0).to(risk.device)
-        edge_noise_value = torch.tensor(0.0).to(risk.device)
 
-        if self.with_noise == "Y":
-            node_predict_x = self.node_denoise_layer(final_x)
-            edge_predict_x = self.edge_denoise_layer((final_x[row, :] + final_x[col, :]))
-            node_noise_value = F.mse_loss(node_predict_x, original_x)
-            node_noise_value = torch.reshape(node_noise_value, (1,1))
-            edge_noise_value = F.mse_loss(edge_predict_x, original_edge)
-            edge_noise_value = torch.reshape(edge_noise_value, (1,1))
-
-        return risk, node_noise_value, edge_noise_value
+        return risk

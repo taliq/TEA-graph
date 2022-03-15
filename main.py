@@ -9,8 +9,6 @@ import torch
 
 def Parser_main():
     parser = argparse.ArgumentParser(description="Deep cox analysis model")
-    parser.add_argument("--Description", default="BorameProgression_decreasefeature100ReFinal",
-                        help="Describe the objective of the running")
     parser.add_argument("--DatasetType", default="TCGA", help="TCGA_BRCA or BORAME or BORAME_Meta or BORAME_Prog",
                         type=str)
     parser.add_argument("--learning_rate", default=0.0001, help="Learning rate", type=float)

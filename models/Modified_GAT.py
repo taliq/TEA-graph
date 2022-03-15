@@ -62,9 +62,9 @@ class GATConv(MessagePassing):
         self._alpha = None
         self.position_bias = Parameter(torch.ones(64))
         self.angle_bias = Parameter(torch.ones(64))
-        self.edge_attr_pos_trans = Linear(50, out_channels, bias=False)
+        self.edge_attr_pos_trans = Linear(100, out_channels, bias=False)
         self.att_edge_attr_pos = Parameter(torch.Tensor(1, 1, out_channels))
-        self.edge_attr_angle_trans = Linear(50, out_channels, bias=False)
+        self.edge_attr_angle_trans = Linear(100, out_channels, bias=False)
         self.att_edge_attr_angle = Parameter(torch.Tensor(1, 1, out_channels))
 
         self.reset_parameters()
@@ -161,14 +161,12 @@ class GATConv(MessagePassing):
 
         if self.with_edge == "Y":
             if self.simple_distance == "N":
-                pos_edge_attr = self.edge_attr_pos_trans(edge_attr[:, 0:50])
+                pos_edge_attr = self.edge_attr_pos_trans(edge_attr[:, 0:100])
                 pos_edge_attr = pos_edge_attr.view(-1, 1, self.out_channels)
-                #pos_alpha_edge = pos_edge_attr.sum(dim=-1)
                 pos_alpha_edge = (pos_edge_attr * self.att_edge_attr_pos).sum(dim=-1)
 
-                angle_edge_attr = self.edge_attr_angle_trans(edge_attr[:, 50:100])
+                angle_edge_attr = self.edge_attr_angle_trans(edge_attr[:, 100:200])
                 angle_edge_attr = angle_edge_attr.view(-1, 1, self.out_channels)
-                #angle_alpha_edge = angle_edge_attr.sum(dim=-1)
                 angle_alpha_edge = (angle_edge_attr * self.att_edge_attr_angle).sum(dim=-1)
 
             if self.with_angle == "N":

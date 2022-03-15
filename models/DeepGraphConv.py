@@ -2,8 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.nn import ReLU, LayerNorm
-from torch_geometric.nn import GENConv, DeepGCNLayer, GINConv
+from torch_geometric.nn import GINConv
 from torch_geometric.utils import softmax
 from torch_scatter import scatter_add
 
@@ -75,7 +74,6 @@ class DeepGraphConv_Surv(torch.nn.Module):
         super(DeepGraphConv_Surv, self).__init__()
 
         hidden_dim = Argument.initial_dim * Argument.attention_head_num
-        #hidden_dim = Argument.initial_dim
         self.resample = 0
         self.num_layers = Argument.number_of_layers
         dropout = Argument.dropout_rate
@@ -109,11 +107,8 @@ class DeepGraphConv_Surv(torch.nn.Module):
         x_ = x
 
         edge_index = data.adj_t
-        edge_attr = None
         batch = data.batch
 
-        #x = self.total_layers[0].conv(x_, edge_index, edge_attr)
-        #x_ = torch.cat([x_, x], axis=1)
         for layer in self.total_layers[1:]:
             x = F.relu(layer(x, edge_index))
             x_ = torch.cat([x_, x], axis=1)
@@ -125,15 +120,6 @@ class DeepGraphConv_Surv(torch.nn.Module):
         h_path = scatter_add(torch.mul(h_path.permute(1,0), softmax(A_path.flatten(), batch)).permute(1,0), batch, dim=0)
         h = self.path_rho(h_path).squeeze()
         h = self.risk_prediction_layer(h).flatten()
-        #h = torch.reshape(h, (h.shape[1], h.shape[0]))
 
-        node_error_loss = torch.tensor(0.0).to(h.device)
-        edge_error_loss = torch.tensor(0.0).to(h.device)
-
-        #logits = self.classifier(h).unsqueeze(0)  # logits needs to be a [1 x 4] vector
-        #Y_hat = torch.topk(logits, 1, dim=1)[1]
-        #hazards = torch.sigmoid(logits)
-        #S = torch.cumprod(1 - hazards, dim=1)
-
-        return h, node_error_loss, edge_error_loss
+        return h
 

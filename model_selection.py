@@ -1,7 +1,7 @@
 
 from models.GAT import GAT
 from models.MLP import MLP
-from models.GAT_v1 import GAT as GAT_custom
+from models.GAT_custom import GAT as GAT_custom
 from models.MLP_attention import MLP_attention as AttnMLP
 from models.DeepGraphConv import DeepGraphConv_Surv as DeepGraphConv
 from models.PatchGCN import PatchGCN

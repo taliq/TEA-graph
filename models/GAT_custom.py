@@ -1,29 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import random
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.init as init
-import torch.nn.functional as F
 
-from torch.nn import Linear, Sequential, ReLU, SELU, PReLU, GELU, Dropout, Conv1d, ELU, LeakyReLU, LayerNorm, BatchNorm1d
-from torch_geometric.nn import GINConv, GCNConv, global_add_pool, global_mean_pool, global_max_pool, GlobalAttention, BatchNorm
+from torch.nn import LayerNorm
+from torch_geometric.nn import global_mean_pool, BatchNorm
 from models.Modified_GAT import GATConv as GATConv
-from torch_geometric.nn import MessageNorm, PairNorm, GraphSizeNorm
-from torch_geometric.utils import degree
-from torch_geometric.utils import k_hop_subgraph
-from torch_geometric.utils import dense_to_sparse
-from torch_geometric.utils import softmax
-# from torch_geometric.transforms import ToSparseTensor
-from torch_sparse import SparseTensor
-from torch_scatter import scatter
-from torch_sparse import set_diag
+from torch_geometric.nn import GraphSizeNorm
 
-from tqdm import tqdm
 from models.model_utils import weight_init
 from models.model_utils import decide_loss_type
-from torch_geometric.nn.inits import kaiming_uniform
 
 from models.pre_layer import preprocess
 from models.post_layer import postprocess
@@ -31,12 +17,21 @@ from models.post_layer import postprocess
 class GAT_module(torch.nn.Module):
 
     def __init__(self, input_dim, output_dim, head_num, dropedge_rate, graph_dropout_rate, loss_type, with_edge, simple_distance, norm_type):
+        """
+        :param input_dim: Input dimension for GAT
+        :param output_dim: Output dimension for GAT
+        :param head_num: number of heads for GAT
+        :param dropedge_rate: Attention-level dropout rate
+        :param graph_dropout_rate: Node/Edge feature drop rate
+        :param loss_type: Choose the loss type
+        :param with_edge: Include the edge feature or not
+        :param simple_distance: Simple multiplication of edge feature or not
+        :param norm_type: Normalization method
+        """
 
         super(GAT_module, self).__init__()
         self.conv = GATConv([input_dim, input_dim], output_dim, heads=head_num, dropout=dropedge_rate, with_edge=with_edge, simple_distance=simple_distance)
         self.norm_type = norm_type
-        #self.gbn = GraphSizeNorm()
-        #self.bn = LayerNorm([1.0] * (output_dim * int(self.conv.heads)))
         if norm_type == "layer":
             self.bn = LayerNorm(output_dim * int(self.conv.heads))
             self.gbn = None
@@ -74,12 +69,10 @@ class GAT_module(torch.nn.Module):
         else:
             x_before, attention_value = self.conv((drop_node_feature, drop_node_feature), edge_index,
                                    edge_attr=None, return_attention_weights=True)
-        #x_before = self.gbn(x_before, batch)
         out_x_temp = 0
         if self.norm_type == "layer":
             for c, item in enumerate(torch.unique(batch)):
                 temp = self.bn(x_before[batch == item])
-
                 if c == 0:
                     out_x_temp = temp
                 else:
@@ -97,10 +90,11 @@ class GAT(torch.nn.Module):
     def __init__(self, dropout_rate, dropedge_rate, Argument):
         super(GAT, self).__init__()
         torch.manual_seed(12345)
+        self.Argument = Argument
+
         dim = Argument.initial_dim
         self.dropout_rate = dropout_rate
         self.dropedge_rate = dropedge_rate
-        self.Argument = Argument
         self.heads_num = Argument.attention_head_num
         self.include_edge_feature = Argument.with_distance
         self.layer_num = Argument.number_of_layers
@@ -110,15 +104,12 @@ class GAT(torch.nn.Module):
 
         postNum = 0
         self.preprocess = preprocess(Argument)
-        #self.conv1 = GAT_module(256, dim, self.heads_num, self.dropedge_rate, self.dropout_rate, Argument.loss_type, with_edge=Argument.with_distance)
-        #postNum += int(self.heads_num)
         self.conv_list = nn.ModuleList([GAT_module(dim * self.heads_num, dim, self.heads_num, self.dropedge_rate,
                                                    self.graph_dropout_rate, Argument.loss_type,
                                                    with_edge=Argument.with_distance,
                                                    simple_distance=Argument.simple_distance,
                                                    norm_type=Argument.norm_type) for _ in
                                         range(int(Argument.number_of_layers))])
-        #self.conv_list = nn.ModuleList([GAT_module(dim * self.heads_num, dim, self.heads_num, self.dropedge_rate, self.graph_dropout_rate, Argument.loss_type, with_edge=Argument.with_distance, simple_distance=Argument.simple_distance) for _ in range(int(Argument.number_of_layers/2.0))])
         postNum += int(self.heads_num) * len(self.conv_list)
 
         self.postprocess = postprocess(dim * self.heads_num, self.layer_num, dim * self.heads_num, Argument.postlayernum, dropout_rate)
@@ -132,11 +123,8 @@ class GAT(torch.nn.Module):
         self.postprocess.reset_parameters()
         self.risk_prediction_layer.apply(weight_init)
 
-
     def forward(self, data, edge_mask=None, Interpretation_mode=False):
 
-        original_x = data.x
-        original_edge = data.edge_attr
         row, col, _ = data.adj_t.coo()
 
         preprocessed_input, preprocess_edge_attr = self.preprocess(data, edge_mask)
@@ -144,13 +132,6 @@ class GAT(torch.nn.Module):
 
         x0_glob = global_mean_pool(preprocessed_input, batch)
         x_concat = x0_glob
-
-        #x_temp_out = self.conv1(preprocessed_input, preprocess_edge_attr, data.adj_t, batch)
-        #x_glob = global_mean_pool(x_temp_out, batch)
-        #x_concat = torch.cat((x_concat, x_glob), 1)
-        #x_out = x_temp_out + preprocessed_input
-        #final_x = x_out
-        attention_concat = []
 
         x_out = preprocessed_input
         final_x = x_out
@@ -176,13 +157,10 @@ class GAT(torch.nn.Module):
             else:
                 x_out = x_temp_out
 
-            #x_out = x_temp_out + x_out
             final_x = x_out
             count = count + 1
 
         postprocessed_output = self.postprocess(x_concat, data.batch)
-
-        #print(postprocessed_output)
         risk = self.risk_prediction_layer(postprocessed_output)
 
         if Interpretation_mode:

@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from torch.nn import ReLU, LayerNorm
 from torch_geometric.nn import GENConv, DeepGCNLayer
@@ -78,16 +77,11 @@ class PatchGCN(torch.nn.Module):
     def __init__(self, dropout_rate, dropedge_rate, Argument):
         super(PatchGCN, self).__init__()
 
-        hidden_dim = 128
-        #hidden_dim = Argument.initial_dim
-        self.resample = 0
+        hidden_dim = Argument.initial_dim * Argument.attention_head_num
         self.num_layers = Argument.number_of_layers
         dropout = Argument.dropout_rate
 
-        if self.resample > 0:
-            self.fc = nn.Sequential(*[nn.Dropout(self.resample), nn.Linear(1024, 256), nn.ReLU(), nn.Dropout(0.25)])
-        else:
-            self.fc = nn.Sequential(*[nn.Linear(1792, 128), nn.ReLU(), nn.Dropout(0.25)])
+        self.fc = nn.Sequential(*[nn.Linear(1792, hidden_dim), nn.ReLU(), nn.Dropout(0.25)])
 
         self.total_layers = torch.nn.ModuleList()
         for i in range(1, self.num_layers + 1):
@@ -133,14 +127,5 @@ class PatchGCN(torch.nn.Module):
         h_path = scatter_add(torch.mul(h_path.permute(1,0), softmax(A_path.flatten(), batch)).permute(1,0), batch, dim=0)
         h = self.path_rho(h_path).squeeze()
         h = self.risk_prediction_layer(h).flatten()
-        #h = torch.reshape(h, (h.shape[1], h.shape[0]))
 
-        node_error_loss = torch.tensor(0.0).to(h.device)
-        edge_error_loss = torch.tensor(0.0).to(h.device)
-
-        #logits = self.classifier(h).unsqueeze(0)  # logits needs to be a [1 x 4] vector
-        #Y_hat = torch.topk(logits, 1, dim=1)[1]
-        #hazards = torch.sigmoid(logits)
-        #S = torch.cumprod(1 - hazards, dim=1)
-
-        return h, node_error_loss, edge_error_loss
+        return h

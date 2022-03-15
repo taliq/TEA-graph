@@ -1,8 +1,6 @@
-import torch
+import torch.nn.init as init
 import torch.nn as nn
 from torch.nn import ReLU, SELU, PReLU, GELU, ELU, LeakyReLU
-
-import torch.nn.functional as F
 
 def weight_init(m):
     '''
