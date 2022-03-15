@@ -18,5 +18,6 @@ Graph deep learning on whole slide image predicts the context-aware prognostic p
 ## Acknowledgments
 * http://github.com/mahmoodlab/Patch-GCN
 * http://github.com/lukemelas/EfficientNet-PyTorch
+* http://github.com/pyg-team/pytorch_geometric
 
-BiNEL (http://www.binel.snu.ac.kr) - This code is made available under the MIT License and is available for non-commercial academic purposes
+BiNEL (http://binel.snu.ac.kr) - This code is made available under the MIT License and is available for non-commercial academic purposes
