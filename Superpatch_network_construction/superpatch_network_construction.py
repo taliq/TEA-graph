@@ -10,43 +10,22 @@ import torch
 import os
 import pandas as pd
 import networkx as nx
-import matplotlib.pyplot as plt
 import torch_geometric.utils as g_util
 from torch_geometric.data import Data
 import numpy as np
-import openslide as osd
-import cv2 as cv
-import parmap
-import multiprocessing
-from PIL import Image, ImageOps
-from sklearn.metrics.pairwise import euclidean_distances
 
 from sklearn.metrics import pairwise_distances
 
 from tqdm import tqdm
 from torch_geometric.transforms import LocalCartesian, Cartesian, Polar
-from torch_scatter import scatter_max
 
 pd.options.mode.chained_assignment = None
 
-
-def Select_second_min(center_node_label, coordinate_matrix):
-
-    Select_list = coordinate_matrix[center_node_label, center_node_label+1:]
-    Select_list = np.argmin(Select_list)
-
-    return Select_list
-
-
-def tme_visualization(sample, centernode, hop_num, distance_thresh, correlation_value, correlation_score=0.5):
-    root_dir = '/home/taliq_lee/supernode_WSI/0.65_whole_new/'
+def false_graph_filtering(distance_thresh):
+    root_dir = './Sample_data_for_demo/Graph_test/'
     origin_file_dir = root_dir
 
-    if correlation_value == 0.5:
-        different_value = 1
-    else:
-        different_value = 0
-
+    different_value = 0
     supernode_sample = os.listdir(root_dir)
     origin_file_list = os.listdir(origin_file_dir)
 
@@ -157,11 +136,6 @@ def tme_visualization(sample, centernode, hop_num, distance_thresh, correlation_
                         actual_pos = actual_pos[['X', 'Y']].to_numpy()
                         actual_pos = torch.tensor(actual_pos)
                         actual_pos = actual_pos.float()
-                        # actual_pos_X = actual_pos['X'].tolist()
-                        # actual_pos_Y = actual_pos['Y'].tolist()
-                        # actual_pos = [(X,Y) for X, Y in zip(actual_pos_X, actual_pos_Y)]
-
-                        # pos_transfrom = Cartesian()
 
                         pos_transfrom = Polar()
                         new_graph = Data(x=new_feature, edge_index=new_edge_index, pos=actual_pos * 256.0)
@@ -170,48 +144,4 @@ def tme_visualization(sample, centernode, hop_num, distance_thresh, correlation_
                         torch.save(new_graph, os.path.join(root_dir, sample_name + "_" + str(different_value) +"_graph_torch_" + str(
                             distance_thresh) + "_artifact_sophis_final.pt"))
 
-                        """
-                        ### Visualize the graph
-                        data = new_graph
-                        location_file = location
-                        position_file = pd.read_csv(supernode_path.split('.csv')[0] + '_' + str(distance_thresh) + '_artifact_sophis_final.csv')
-
-                        WSI_node_idx = position_file['Unnamed: 0.1'].tolist()
-                        WSI_node_idx = [int(item) for item in WSI_node_idx]
-                        WSI_location = location_file.iloc[WSI_node_idx]
-                        X_pos = WSI_location['X'].tolist()
-                        Y_pos = WSI_location['Y'].tolist()
-                        X_Y_pos = [(X, Y) for X, Y in zip(X_pos, Y_pos)]
-                        pos_dict = zip(position_file['Unnamed: 0'].tolist(), X_Y_pos)
-                        pos_dict = dict(pos_dict)
-
-                        row, col = data.edge_index
-                        row = row.cpu().detach().numpy()
-                        col = col.cpu().detach().numpy()
-                        WSI_edge_index = [(row_item, col_item) for row_item, col_item in zip(row, col) if row_item != col_item]
-
-                        WSI_graph = nx.Graph()
-                        WSI_graph.add_nodes_from(list(range(data.x.shape[0])))
-                        WSI_graph.add_edges_from(WSI_edge_index)
-
-                        my_dpi = 96
-                        plt.figure()
-                        # plt.figure(figsize=(WSI_image.size[0] / my_dpi, WSI_image.size[1] / my_dpi), dpi=96)
-                        plt.axis('off')
-                        nx.draw_networkx(WSI_graph, pos=pos_dict, node_size=1, node_color='red', width=0.2, arrows=False,
-                                         with_labels=False, alpha=0.3)
-                        plt.subplots_adjust(left=0., right=1., top=1., bottom=0.)
-                        plt.savefig('/home/taliq_lee/WSI_graph_wo_IG_4.3.pdf', transparent=True)
-                        """
-
-                    temp = 0
-                # new_location = location.iloc[]
-
             pbar.update()
-        ### call supernode's subgraph & draw it
-
-#tme_visualization("S 000000692", 5000, 3, 2.9, 0.5)
-#tme_visualization("S 000000692", 5000, 3, 4.3, 0.5, 0.5)
-tme_visualization("S 000000692", 5000, 3, 4.3, 0.65, 0.5)
-
-#tme_visualization("S 000000692", 5000, 3, 2.9, 0.5)

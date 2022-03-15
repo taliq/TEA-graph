@@ -16,7 +16,8 @@ import torch
 import openslide as osd
 from torchvision import transforms
 from torch_geometric.data import Data
-from EfficientNet import EfficientNet
+from Superpatch_network_construction.EfficientNet import EfficientNet
+from Superpatch_network_construction.superpatch_network_construction import false_graph_filtering
 from skimage.filters import threshold_multiotsu
 import pickle
 import argparse
@@ -455,6 +456,8 @@ def main():
         for image in final_files:
             supernode_generation(image, model_ft, device, Argument, save_dir)
             pbar_tot.update()
+
+    false_graph_filtering(4.3)
     
 if __name__ == "__main__":
     main()
