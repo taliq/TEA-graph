@@ -1,27 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import random
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.init as init
-import torch.nn.functional as F
 
-from torch.nn import Linear, Sequential, ReLU, SELU, PReLU, GELU, Dropout, Conv1d, ELU, LeakyReLU, LayerNorm, BatchNorm1d
-from torch_geometric.nn import GINConv, GCNConv, global_add_pool, global_mean_pool, global_max_pool, GlobalAttention, BatchNorm
-from torch_geometric.nn import GATv2Conv as GATConv
-from torch_geometric.nn import MessageNorm, PairNorm, GraphSizeNorm
-from torch_geometric.utils import degree
-from torch_geometric.utils import k_hop_subgraph
-from torch_geometric.utils import dense_to_sparse
-from torch_geometric.utils import softmax
-# from torch_geometric.transforms import ToSparseTensor
-from torch_sparse import SparseTensor
-from torch_scatter import scatter
+from torch.nn import Linear, Dropout, LeakyReLU, LayerNorm
+from torch_geometric.nn import BatchNorm
+from torch_geometric.nn import GraphSizeNorm
 from torch_sparse import set_diag
 
-from tqdm import tqdm
 from models.model_utils import weight_init
+from model_utils import decide_loss_type
 
 class BasicLinear_module(torch.nn.Module):
 
@@ -66,29 +55,12 @@ class BasicLinear_module(torch.nn.Module):
 
         return out_x
 
-def decide_loss_type(loss_type):
-
-    prelu1 = 0
-
-    if loss_type == "RELU":
-        prelu1 = LeakyReLU(negative_slope=0.2)
-    elif loss_type == "SELU":
-        prelu1 = SELU()
-    elif loss_type == "PRELU":
-        prelu1 = LeakyReLU(negative_slope=0.2)
-    elif loss_type == "GELU":
-        prelu1 = GELU()
-    elif loss_type == "ELU":
-        prelu1 = ELU()
-
-    return prelu1
-
 class preprocess(torch.nn.Module):
 
     def __init__(self, argument):
         super(preprocess, self).__init__()
 
-        prelayerpreset = [800, argument.attention_head_num * argument.initial_dim, argument.attention_head_num * argument.initial_dim]
+        prelayerpreset = [800, 400, argument.attention_head_num * argument.initial_dim]
         self.prelayernum = []
         self.prelayernum.append(1792)
         for i in range(0, argument.prelayernum -1):
