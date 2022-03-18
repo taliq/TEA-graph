@@ -63,7 +63,7 @@ class preprocess(torch.nn.Module):
         prelayerpreset = [800, 400, argument.attention_head_num * argument.initial_dim]
         self.prelayernum = []
         self.prelayernum.append(1792)
-        for i in range(0, argument.prelayernum -1):
+        for i in range(0, argument.MLP_layernum -1):
             self.prelayernum.append(prelayerpreset[i])
 
         dropout_rate = argument.dropout_rate

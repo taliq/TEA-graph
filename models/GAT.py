@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch.nn import LayerNorm
 from torch_geometric.nn import global_mean_pool
 from torch_geometric.nn import GATConv
-from torch_geometric.nn import BatchNorm
+from torch_geometric.nn import BatchNorm, GraphSizeNorm
 
 from models.model_utils import weight_init
 from models.model_utils import decide_loss_type
@@ -98,7 +98,7 @@ class GAT(torch.nn.Module):
                                         range(int(Argument.number_of_layers))])
         postNum += int(self.heads_num) * len(self.conv_list)
 
-        self.postprocess = postprocess(dim * self.heads_num, self.layer_num, dim * self.heads_num, Argument.postlayernum, dropout_rate)
+        self.postprocess = postprocess(dim * self.heads_num, self.layer_num, dim * self.heads_num, Argument.MLP_layernum, dropout_rate)
         self.risk_prediction_layer = nn.Linear(self.postprocess.postlayernum[-1], 1)
 
     def reset_parameters(self):

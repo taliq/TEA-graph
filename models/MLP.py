@@ -98,7 +98,7 @@ class MLP(torch.nn.Module):
         self.conv_list = nn.ModuleList([MLP_module(dim * self.heads_num, dim, self.heads_num, self.dropedge_rate, self.graph_dropout_rate, Argument.loss_type, with_edge=Argument.with_distance) for _ in range(int(Argument.number_of_layers))])
         postNum += int(self.heads_num) * len(self.conv_list)
 
-        self.postprocess = postprocess(dim * self.heads_num, self.layer_num, dim * self.heads_num, Argument.postlayernum, dropout_rate)
+        self.postprocess = postprocess(dim * self.heads_num, self.layer_num, dim * self.heads_num, Argument.MLP_layernum, dropout_rate)
         self.risk_prediction_layer = nn.Linear(self.postprocess.postlayernum[-1], 1)
 
     def reset_parameters(self):
