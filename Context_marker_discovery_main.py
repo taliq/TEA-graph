@@ -12,21 +12,20 @@ from Context_marker_discovery.Clustering_module import Final_visualization
 def Parser_main():
     parser = argparse.ArgumentParser(description="Deep cox analysis model")
     parser.add_argument("--Subgraph_save_dir",
-                        default="./results/TCGA/GAT_custom/2022-03-11_08:45:00/",
-                        help="TCGA_BRCA or BORAME or BORAME_Meta or BORAME_Prog",
+                        default="./results/TCGA/GAT_custom/",
+                        help="Select the directory where IG_analysis results are saved ",
                         type=str)
     parser.add_argument("--original_data_dir",
                         default="./Sample_data_for_demo/Graphdata/KIRC/",
-                        )
+                        help="Select the directory where superpatch networks are saved")
     parser.add_argument("--WSI_rootdir",
                         default="./Sample_data_for_demo/Raw_WSI/",
-                        )
+                        help="Select the directory where WSIs are saved ")
     parser.add_argument("--IG_type",
                         default="Mid", help="Top, Mid, Low")
     parser.add_argument("--save_dir_name", default="test", type=str)
     parser.add_argument("--patch_cluster_num", default=8, type=int)
     parser.add_argument("--graph_cluster_num", default=10, type=int)
-
 
     return parser.parse_args()
 
