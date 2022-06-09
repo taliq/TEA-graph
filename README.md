@@ -5,7 +5,7 @@ Graph deep learning on whole slide image predicts the context-aware prognostic p
 * To install the dependencies for this project, see the "requirements.yaml"
 * Tested on Nvidia TESLA V100 x 2 with CUDA 11.1
 
-## Processing whole slide image (WSI) into superpatch-graph
+## Step 1: Processing whole slide image (WSI) into superpatch-graph
 #### What is the superpatch-graph?
 * Superpatch-graph is the compressed representation of whole slide image into graph structure in memory efficient manner.
 * Run the ./Superpatch_network_construction/supernode_generation.py
@@ -16,13 +16,13 @@ Graph deep learning on whole slide image predicts the context-aware prognostic p
     * Node position information in "_node_location_list.csv"
     * Superpatch aggregated dictionary in "_artifact_sophis_final.csv"
 
-## Training TEA-graph using superpatch-graph
+## Step 2: Training TEA-graph using superpatch-graph
 * Users can predict the prognosis of entire host with tumor environment-associated context analysis using deep graph learning (TEA-graph)
 * Run the ./main.py with appropriate hyperparameters
   * Users can simply run the above script with pre-defined parameters and datasets
   * Or, users can use their own dataset preprocessed by "supernode_generation" script
 
-## Visualization of IG (Integrated gradients) value on WSI
+## Step 3: Visualization of IG (Integrated gradients) value on WSI
 * Users can visualize the IG value which is highly correlated with risk value of each region in WSI
 * Also, we provide subgraph-level contextual pathological feature extraction
 * Run the ./IG_attention_feature_cal_main.py with same parameters you used for training your own TEA-graph model
@@ -37,6 +37,12 @@ Graph deep learning on whole slide image predicts the context-aware prognostic p
     * "_WSI_graph_w_IG.jpeg" is the IG value colored superpatch-graph
   * "IG_again" directory is also created inside each patient's folder
     * "_IG_TME_subgraph.csv" indicates the each IG group's subgraph
+
+## Step 4: Biomarker discovery
+* Users can extract the contextual biomarker using the calculated IG values and extracted feature at the previous step
+* Run the ./Context_marker_discovery_main.py with approprate directory path
+* Users can obtain the several candidate pathology images with visualized graph for contextual biomarker
+
 
 ## Acknowledgments
 * http://github.com/mahmoodlab/Patch-GCN
